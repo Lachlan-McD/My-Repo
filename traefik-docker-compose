@@ -1,0 +1,64 @@
+services:
+  traefik:
+    container_name: traefik
+    image: traefik:v3.1.5
+    ports:
+      - "80:80"
+      - "8081:8080"
+      - "443:443"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock # <== Volume for docker admin
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/traefik/config/traefik.yaml:/etc/traefik/traefik.yaml:ro
+    networks:
+      - servarr_default
+    command: --api.insecure=true --providers.docker
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.api.rule=Host(`monitor.lachiehosted.xyz`)"
+      - "traefik.http.routers.api.service=api@internal"
+    restart: unless-stopped
+
+
+  whoami:
+    # A container that exposes an API to show its IP address
+    image: traefik/whoami
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.whoami.rule=Host(`whoami.lachiehosted.xyz`)"
+      - "traefik.http.routers.whoami.entrypoints=web"
+    networks:
+      - servarr_default
+
+  nginx:
+    container_name: "nginx"
+    image: "jc21/nginx-proxy-manager:latest"
+    ports:
+      - "40443:443/tcp"
+      - "40080:80/tcp"
+      - "40081:81/tcp"
+    restart: "unless-stopped"
+    networks:
+      - servarr_default
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/nginxproxymanager/config/letsencrypt:/etc/letsencrypt"
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/nginxproxymanager/data:/data"
+
+  nginx-db:
+    container_name: "nginx-db"
+    environment:
+      - "MYSQL_DATABASE=npm"
+      - "MYSQL_PASSWORD=npm"
+      - "MYSQL_ROOT_PASSWORD=npm"
+      - "MYSQL_USER=npm"
+    networks:
+      - servarr_default
+    expose:
+      - "3306/tcp"
+    image: "jc21/mariadb-aria"
+    ipc: "private"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/nginxproxymanager/db:/var/lib/mysql"
+
+networks:
+  servarr_default:
+    external: true
