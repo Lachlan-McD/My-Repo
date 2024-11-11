@@ -1,0 +1,160 @@
+services:
+  Overseerr:
+    container_name: "Overseerr"
+    image: "hotio/overseerr:release"
+    ports:
+      - "5055:5055/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/overseer:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data/overseer:/data"
+
+
+      
+  autobrr:
+    container_name: autobrr
+    image: ghcr.io/autobrr/autobrr:latest
+    restart: unless-stopped
+    #logging:
+    #  driver: json-file
+    #  options:
+    #    max-file: ${DOCKERLOGGING_MAXFILE}
+    #    max-size: ${DOCKERLOGGING_MAXSIZE}
+
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/autobrr/config:/config"
+    ports:
+      - "7474:7474"
+      
+  plex:
+    container_name: "plex"
+    image: "lscr.io/linuxserver/plex:latest"
+    network_mode: "host"
+    ports:
+      - "32400:32400/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/config/Plex:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data"
+
+#  dizquetv:
+ #   container_name: "dizquetv"
+  #  image: "vexorian/dizquetv:latest"
+   # volumes:
+    #  - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/Dizquetv:/config"
+     # - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data"
+      #- "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/Dizquetv/dizquetv-volume:/home/node/app/.dizquetv"
+#    ports: 
+ #     - "8000:8000"
+  #  restart: unless-stopped
+    
+  prowlarr:
+    container_name: "prowlarr"
+    image: "ghcr.io/linuxserver/prowlarr:develop"
+    ports:
+      - "9696:9696/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/Prowlarr:/config"
+
+  qbittorrent:
+    container_name: "qbittorrent"
+    image: "lscr.io/linuxserver/qbittorrent:5.0.1"
+    network_mode: "bridge"
+    ports:
+      - "56881:56881/tcp"
+      - "56881:56881/udp"
+      - "8080:8080/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/qbittorrent:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data/torrents:/torrents"
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/data/torrentfiles:/torrentfiles"
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/data/torrents:/downloads"
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/data:/data"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data/media/tv:/tv"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data/media/movies:/movies"
+    #labels:
+      
+  cross-seed:
+        image: ghcr.io/cross-seed/cross-seed
+        container_name: cross-seed
+        ports:
+            - "2468:2468" # you'll need this for daemon mode only
+        volumes:
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/cross-seed:/config
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/qbittorrent/qBittorrent/BT_backup:/BT_Backup:ro # your torrent clients .torrent cache, can and should be mounted read-only (e.g. qbit: `BT_Backup` | deluge: `state` | transmission: `transmission/torrents` | rtorrent: session dir from `.rtorrent.rc`)
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/cross-seed/torrent_cache:/cross-seeds
+
+            - /srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data # OPTIONAL!!! this is location of your data (used for data-based searches or linking) # will need to mirror your torrent client's path (like Arr's do)
+        command: daemon # this enables the daemon, change to search to specifically run a search ONLY
+        restart: "no" # make sure to not enable it in search mode, otherwise it will keep rerunning constantly
+
+  radarr:
+    container_name: "radarr"
+    image: "lscr.io/linuxserver/radarr:latest"
+    ports:
+      - "7878:7878/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/radarr:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data"
+    working_dir: "/"
+    #labels:
+
+
+  sonarr:
+    container_name: "sonarr"
+    entrypoint:
+      - "/init"
+    image: "lscr.io/linuxserver/sonarr:latest"
+    ports:
+      - "8989:8989/tcp"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/sonarr:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data"
+    #labels:
+
+
+  flaresolverr:
+
+    image: ghcr.io/flaresolverr/flaresolverr:latest
+    container_name: flaresolverr
+    environment:
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - LOG_HTML=${LOG_HTML:-false}
+      - CAPTCHA_SOLVER=${CAPTCHA_SOLVER:-none}
+
+    ports:
+      - "8191:8191"
+    restart: unless-stopped
+
+  readarr:
+    image: lscr.io/linuxserver/readarr:develop
+    container_name: readarr
+    environment:
+      - TZ=Australia/Melbourne
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/readarr/config:/config
+      - /srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data:/data
+    ports:
+      - 8787:8787
+    restart: unless-stopped
+
+
+     
+  unpackerr:
+    container_name: "unpackerr"
+    image: "hotio/unpackerr:latest"
+    restart: "unless-stopped"
+    volumes:
+      - "/srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/unpackerr:/config"
+      - "/srv/dev-disk-by-uuid-34c04273-7874-4986-91d0-45f1ea0ab71d/data/torrents:/downloads"
+
+
+
+
+networks:
+  servarr_default:
+    external: true
