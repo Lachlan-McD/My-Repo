@@ -1,0 +1,103 @@
+services:
+  db:
+    image: mysql:5.7
+    container_name: wordpressdatabase
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/wordpress/wp-data:/var/lib/mysql
+    environment:
+       MYSQL_ROOT_PASSWORD: rootPassword
+       MYSQL_DATABASE: wordpress
+       MYSQL_USER: wp-user
+       MYSQL_PASSWORD: wp-pass
+    ports:
+      - 8889:3306
+
+  phpmyadmin:
+    container_name: phpmyadmin
+    depends_on:
+      - db
+    image: phpmyadmin/phpmyadmin
+    environment:
+      PMA_HOST: db
+      MYSQL_USER: wp-user
+      MYSQL_PASSWORD: wp-pass
+      MYSQL_ROOT_PASSWORD: rootPassword
+    ports:
+      - 3003:80
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/phpmyadmin/config:/config
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    ports:
+      - 8888:80
+      - 4443:443
+    environment:
+       WORDPRESS_DB_HOST: db
+       WORDPRESS_DB_USER: wp-user
+       WORDPRESS_DB_PASSWORD: wp-pass
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/wordpress:/var/www/html
+    container_name: wordpress
+
+  sqlitebrowser:
+    image: lscr.io/linuxserver/sqlitebrowser:latest
+    container_name: sqlitebrowser
+    security_opt:
+      - seccomp:unconfined #optional
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Melbourne
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/sqlitebrowser/config:/config
+    ports:
+      - 3000:3000
+      - 3001:3001
+    restart: unless-stopped
+
+  invoiceshelf:
+        container_name: invoiceshelf
+        volumes:
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/invoiceshelf/conf:/conf
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/invoiceshelf/data:/data
+        environment:
+            - PHP_TZ=Australia/Melbourne
+            - TIMEZONE=Australia/Melbourne
+            - APP_NAME=Laravel
+            - APP_ENV=local
+            - APP_DEBUG=true
+            - APP_URL=http://localhost:90
+            - DB_CONNECTION=mysql
+            - DB_HOST=invoiceshelf_db
+            - DB_PORT=3306
+            - DB_DATABASE=invoiceshelf
+            - DB_USERNAME=invoiceshelf
+            - DB_PASSWORD=banana
+            - DB_PASSWORD_FILE=
+            - CACHE_STORE=file
+            - SESSION_DRIVER=file
+            - SESSION_LIFETIME=120
+            - SESSION_ENCRYPT=false
+            - SESSION_PATH=/
+            - SESSION_DOMAIN=localhost
+            - SANCTUM_STATEFUL_DOMAINS=localhost:90
+            - STARTUP_DELAY=2
+        ports:
+            - 90:80
+        links:
+            - db_inv
+        image: invoiceshelf/invoiceshelf:alpha
+  db_inv:
+    image: mysql:5.7
+    container_name: invoicedatabase
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/invoiceshelf/is-data:/var/lib/mysql
+    environment:
+       MYSQL_ROOT_PASSWORD: banana
+       MYSQL_DATABASE: invoiceshelf
+       MYSQL_USER: lachie
+       MYSQL_PASSWORD: banana
+    ports:
+    - 3306:3306
