@@ -1,0 +1,71 @@
+services:
+  homeassistant:
+    image: lscr.io/linuxserver/homeassistant:latest
+    container_name: homeassistant
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Australia/Melbourne
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/homeassistant:/config
+    ports:
+      - 8123:8123 #optional
+    restart: unless-stopped
+
+  scrypted:
+        environment:
+            - SCRYPTED_WEBHOOK_UPDATE_AUTHORIZATION=Bearer SET_THIS_TO_SOME_RANDOM_TEXT
+            - SCRYPTED_WEBHOOK_UPDATE=http://10.69.1.10:10444/v1/update
+        image: ghcr.io/koush/scrypted
+        volumes:
+            # Default volume for the Scrypted database. Typically should not be changed.
+            - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/scrypted/volume:/server/volume
+        devices: [
+        ]
+        ports:
+        - "10443:10443/tcp"
+        container_name: scrypted
+        restart: unless-stopped
+
+  homebridge:
+    image: homebridge/homebridge
+    container_name: homebridge
+    restart: unless-stopped
+    network_mode: "host"
+    ports:
+    - 8581:8581
+    volumes:
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/homebridge:/homebridge
+    logging:
+      driver: json-file
+      options:
+        max-size: "10mb"
+        max-file: "1"
+
+  frigate:
+    container_name: frigate
+    privileged: true # this may not be necessary for all setups
+    restart: unless-stopped
+    image: ghcr.io/blakeblackshear/frigate:stable
+    shm_size: "500mb" # update for your cameras based on calculation above
+    devices:
+     # - /dev/bus/usb:/dev/bus/usb # Passes the USB Coral, needs to be modified for other versions
+     # - /dev/apex_0:/dev/apex_0 # Passes a PCIe Coral, follow driver instructions here https://coral.ai/docs/m2/get-started/#2a-on-linux
+     # - /dev/video11:/dev/video11 # For Raspberry Pi 4B
+      - /dev/dri/renderD128:/dev/dri/renderD128 # For intel hwaccel, needs to be updated for your hardware
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /srv/dev-disk-by-uuid-3ed90024-a691-4b4c-8442-a10397e5c1eb/portainer/frigate/config:/config
+      - /srv/dev-disk-by-uuid-8b1a9181-f319-4dd2-b678-9a8c03686541/NVR:/media/frigate
+      - type: tmpfs # Optional: 1GB of memory, reduces SSD/SD Card wear
+        target: /tmp/cache
+        tmpfs:
+          size: 1000000000
+    ports:
+      - "8971:8971"
+      - "5000:5000" # Internal unauthenticated access. Expose carefully.
+      - "8554:8554" # RTSP feeds
+      - "8555:8555/tcp" # WebRTC over tcp
+      - "8555:8555/udp" # WebRTC over udp
+    environment:
+      FRIGATE_RTSP_PASSWORD: "banana"
